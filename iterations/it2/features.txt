@@ -1,0 +1,5 @@
+Adds several low-hanging improvements requiring minimal changes to our code:
+- L2 regularization
+- Gradient clipping
+- Leaky ReLU
+- He initialization

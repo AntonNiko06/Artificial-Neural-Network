@@ -1,0 +1,2 @@
+Most basic implementation of an ANN, both nodewise and layerwise.
+The only extra feature is early stopping with patience.

@@ -1,0 +1,5 @@
+Adds elaborate docstrings for:
+- nodewise: iteration 1
+- layerwise: iteration 2
+
+This was not done for each iteration as it would take up a lot of space and reduce readability.
