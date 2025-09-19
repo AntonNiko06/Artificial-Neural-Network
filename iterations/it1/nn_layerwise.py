@@ -42,6 +42,8 @@ class NeuralNetwork():
         self.weight_min = -1.0
         self.weight_max = 1.0
 
+        self.loss_history = []
+
         # Initialize layers
         for i in range(len(layer_dimensions)):
             is_input_layer = i == 0
@@ -196,6 +198,9 @@ class NeuralNetwork():
                 # Get mse of the model for the validation set
                 current_model = [self.get_full_mse(X_val, y_val), self.get_weights()]
 
+                # Keep track of loss
+                self.loss_history.append(current_model[0])
+
                 # Keep track of whether or not the model improved compared to the best model
                 if i == 0:
                     best_model = current_model
@@ -224,12 +229,14 @@ class NeuralNetwork():
                 se = 0
                 
                 for j in range(len(X)):
-                    self.backpropagation(X[j], y[j], learning_rate)
+                    self.backpropagation(X[j], y[j], learning_rate, lam)
 
                     # Calculate MSE (assumes there is just one output neuron)
                     se += self.loss(self.layers[-1].activation_values[0], y[j])
 
                 mse = se / len(X)
+
+                self.loss_history.append(se)
 
                 # if (i % 20 == 0): print(f"MSE at epoch {i}: {se}") # Print SE to get value more easier to interpret by eye
 
