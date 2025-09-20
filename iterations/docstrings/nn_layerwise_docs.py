@@ -47,7 +47,7 @@ class Layer():
         self.weights = None
         self.biases = None
 
-    def init_weights(self, min, max, weights_count, method="He"):
+    def init_weights(self, min : float, max : float, weights_count : int, method : str ="He"):
         """Initializes the weights for current layer
 
         If not specified otherwise, He initialization is used.

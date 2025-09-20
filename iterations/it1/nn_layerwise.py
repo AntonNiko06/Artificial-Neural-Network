@@ -16,23 +16,17 @@ class Layer():
         self.weights = None
         self.biases = None
 
-    def init_weights(self, min, max, weights_count, method="He"):
+    def init_weights(self, min : float, max : float, weights_count : int, rng : np.random.Generator):
         """Initializes the weights for current layer"""
 
-        if method=="He": # He initialization specifically for ReLU
-            std_dev = np.sqrt(2 / weights_count)
-            self.weights = np.random.standard_normal((self.layer_size, weights_count)) * std_dev
-            
-            self.biases = np.zeros(self.layer_size)
-        else: # Initialization by uniformly sampling between minimum and maximum value
-            self.weights = np.random.uniform(min, max, (self.layer_size, weights_count))
-            self.biases = np.random.uniform(min, max, self.layer_size)
+        self.weights = rng.uniform(min, max, (self.layer_size, weights_count))
+        self.biases = rng.uniform(min, max, self.layer_size)
 
 
 class NeuralNetwork():
     """Class representing the neural network containing layer objects"""
 
-    def __init__(self, layer_dimensions: list):
+    def __init__(self, layer_dimensions: list, rng : np.random.Generator):
         """Initialize an instance of the Neural Network class"""
         
         self.layers = []
@@ -53,20 +47,20 @@ class NeuralNetwork():
         prev_layer_size = 0
         for layer in self.layers:
             if not layer.is_input_layer:
-                layer.init_weights(self.weight_min, self.weight_max, prev_layer_size)
+                layer.init_weights(self.weight_min, self.weight_max, prev_layer_size, rng)
 
             prev_layer_size = layer.layer_size
 
     def activation(self, inputs : np.ndarray) -> np.ndarray:
-        """The leaky Rectified Linear Unit function acts as our activation function"""
+        """The Rectified Linear Unit function acts as our activation function"""
 
-        return np.where(inputs < 0, 0.01*inputs, inputs)
+        return np.where(inputs < 0, 0, inputs)
 
     
     def activation_derivative(self, inputs : np.ndarray) -> np.ndarray:
-        """The derivative of the leaky Rectified Linear Unit function"""
+        """The derivative of the Rectified Linear Unit function"""
 
-        return np.where(inputs < 0, 0.01, 1)
+        return np.where(inputs < 0, 0, 1)
     
     def loss(self, prediction : float, real_value : float) -> float:
         """Mean squared error acts as our loss function"""
@@ -103,7 +97,7 @@ class NeuralNetwork():
         
         return self.layers[-1].activation_values
 
-    def backpropagation(self, input_values : list, real_value : float, learning_rate : float, lam : float):
+    def backpropagation(self, input_values : list, real_value : float, learning_rate : float):
         """Implementation of the backpropagation algorithm"""
         
         # Start with a forward pass to generate all the required values for the backward pass
@@ -138,18 +132,15 @@ class NeuralNetwork():
             
             # Now calculate the weight gradients
             gradients = np.outer(cur_layer.der_node_values, der_wi_wrt_weights)
-            
-            # Clip the gradients to prevent overflow
-            np.clip(gradients, -1e3, 1e3, out=gradients)
 
             # And finally update the weights using the gradient
-            self.update_weights(cur_layer, gradients, bias_gradient, learning_rate, lam)
+            self.update_weights(cur_layer, gradients, bias_gradient, learning_rate)
 
-    def update_weights(self, layer : Layer, weights_gradients : np.ndarray, bias_gradient : np.ndarray, learning_rate : float, lam : float):
+    def update_weights(self, layer : Layer, weights_gradients : np.ndarray, bias_gradient : np.ndarray, learning_rate : float):
         """Updates the given layers weights and biases using the given gradients"""
         
-        layer.weights -= learning_rate * (weights_gradients + lam * layer.weights)
-        layer.biases = layer.biases - bias_gradient * learning_rate
+        layer.weights -= learning_rate * weights_gradients
+        layer.biases -= learning_rate * bias_gradient
 
     def get_weights(self) -> list:
         """Returns the weights of the current state of the neural network"""
@@ -182,7 +173,7 @@ class NeuralNetwork():
         return mse
 
     def train(self, X : np.ndarray, y : np.ndarray, epochs : int, learning_rate : float, X_val : np.ndarray, y_val : np.ndarray, 
-              patience : int, max_epochs : int, lam : float):
+              patience : int, max_epochs : int):
         """Training function that performs backward propagation for a specified or unspeciefied number of epochs"""
 
         if epochs == 0:
@@ -193,7 +184,7 @@ class NeuralNetwork():
             for i in range(max_epochs + 10): # is never reached because we stop the loop when max_epochs is reached
                 # Train the model for one epoch
                 for j in range(len(X)):
-                    self.backpropagation(X[j], y[j], learning_rate, lam)
+                    self.backpropagation(X[j], y[j], learning_rate)
 
                 # Get mse of the model for the validation set
                 current_model = [self.get_full_mse(X_val, y_val), self.get_weights()]
@@ -229,16 +220,15 @@ class NeuralNetwork():
                 se = 0
                 
                 for j in range(len(X)):
-                    self.backpropagation(X[j], y[j], learning_rate, lam)
+                    self.backpropagation(X[j], y[j], learning_rate)
 
                     # Calculate MSE (assumes there is just one output neuron)
                     se += self.loss(self.layers[-1].activation_values[0], y[j])
 
                 mse = se / len(X)
 
-                self.loss_history.append(se)
-
-                # if (i % 20 == 0): print(f"MSE at epoch {i}: {se}") # Print SE to get value more easier to interpret by eye
+                # Keep track of loss
+                self.loss_history.append(se) # SE not MSE to get value more easier to interpret by eye 
 
             self.best_val_mse = mse
             self.training_epochs = epochs

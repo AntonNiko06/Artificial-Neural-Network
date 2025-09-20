@@ -1,5 +1,4 @@
-Adds several low-hanging improvements requiring minimal changes to our code:
-- L2 regularization
-- Gradient clipping
-- Leaky ReLU
-- He initialization
+This implementation fixes the problem of dying neurons by using leaky ReLU as the activation function.
+Here, the activation values produced by the function are either the input itself, if above 0, or 0.01 multiplied by the input, if not.
+
+I have also changed the method of weight initialization from uniform sampling to He initialization, as this works better with models using ReLU or variations of it as their activation functions.

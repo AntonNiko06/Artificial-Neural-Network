@@ -104,7 +104,7 @@ class NeuralNetwork():
         
         return self.layers[-1].activation_values
 
-    def backpropagation(self, input_values : list, real_value : float, learning_rate : float):
+    def backpropagation(self, input_values : list, real_value : float, learning_rate : float, lam : float):
         """Implementation of the backpropagation algorithm"""
         
         # Start with a forward pass to generate all the required values for the backward pass
@@ -139,15 +139,18 @@ class NeuralNetwork():
             
             # Now calculate the weight gradients
             gradients = np.outer(cur_layer.der_node_values, der_wi_wrt_weights)
+            
+            # Clip the gradients to prevent overflow
+            np.clip(gradients, -1e3, 1e3, out=gradients)
 
             # And finally update the weights using the gradient
-            self.update_weights(cur_layer, gradients, bias_gradient, learning_rate)
+            self.update_weights(cur_layer, gradients, bias_gradient, learning_rate, lam)
 
-    def update_weights(self, layer : Layer, weights_gradients : np.ndarray, bias_gradient : np.ndarray, learning_rate : float):
+    def update_weights(self, layer : Layer, weights_gradients : np.ndarray, bias_gradient : np.ndarray, learning_rate : float, lam : float):
         """Updates the given layers weights and biases using the given gradients"""
         
-        layer.weights -= learning_rate * weights_gradients
-        layer.biases -= learning_rate * bias_gradient
+        layer.weights -= learning_rate * (weights_gradients + lam * layer.weights)
+        layer.biases = layer.biases - bias_gradient * learning_rate
 
     def get_weights(self) -> list:
         """Returns the weights of the current state of the neural network"""
@@ -180,7 +183,7 @@ class NeuralNetwork():
         return mse
 
     def train(self, X : np.ndarray, y : np.ndarray, epochs : int, learning_rate : float, X_val : np.ndarray, y_val : np.ndarray, 
-              patience : int, max_epochs : int):
+              patience : int, max_epochs : int, lam : float):
         """Training function that performs backward propagation for a specified or unspeciefied number of epochs"""
 
         if epochs == 0:
@@ -191,7 +194,7 @@ class NeuralNetwork():
             for i in range(max_epochs + 10): # is never reached because we stop the loop when max_epochs is reached
                 # Train the model for one epoch
                 for j in range(len(X)):
-                    self.backpropagation(X[j], y[j], learning_rate)
+                    self.backpropagation(X[j], y[j], learning_rate, lam)
 
                 # Get mse of the model for the validation set
                 current_model = [self.get_full_mse(X_val, y_val), self.get_weights()]
@@ -227,7 +230,7 @@ class NeuralNetwork():
                 se = 0
                 
                 for j in range(len(X)):
-                    self.backpropagation(X[j], y[j], learning_rate)
+                    self.backpropagation(X[j], y[j], learning_rate, lam)
 
                     # Calculate MSE (assumes there is just one output neuron)
                     se += self.loss(self.layers[-1].activation_values[0], y[j])

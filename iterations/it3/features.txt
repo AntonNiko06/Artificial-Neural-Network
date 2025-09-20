@@ -1,0 +1,6 @@
+Previously we essentially tried to prevent the problem of gradients becoming too small. Now we will also implement changes to prevent them from becoming too large.
+The reason for these changes is that I have encountered overflow warnings during training with some combinations of training parameters.
+
+The changes I will therefore implement are the following:
+- L2 regularization
+- Gradient clipping

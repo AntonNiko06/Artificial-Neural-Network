@@ -1,2 +1,5 @@
 Most basic implementation of an ANN, both nodewise and layerwise.
-The only extra feature is early stopping with patience.
+The only extra feature is early stopping with patience for automatic training durations.
+
+This model only works as intended (reducing loss) for some seeds. 
+The main problem with this implementation is that of dying neurons, where weights of neurons are set to 0 because of the ReLU activation function.
